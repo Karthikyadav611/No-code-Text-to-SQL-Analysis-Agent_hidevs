@@ -7,7 +7,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from database.models import QueryHistory
-from services.schema_service import format_schema_for_prompt, get_schema_map
+from services.schema_service import (
+    format_schema_for_prompt,
+    get_schema_map,
+    get_table_relationships,
+)
 from services.sql_generator import sql_generator_service
 from utils.config import settings
 from utils.serializers import serialize_value
@@ -43,7 +47,8 @@ class QueryService:
 
     def execute_user_query(self, db: Session, user_query: str) -> dict[str, Any]:
         schema_map = get_schema_map(db)
-        schema_text = format_schema_for_prompt(schema_map)
+        relationships = get_table_relationships(db, schema_map)
+        schema_text = format_schema_for_prompt(schema_map, relationships)
         generated_sql = sql_generator_service.generate_sql(user_query, schema_text)
 
         is_valid, validation_message = validate_select_query(generated_sql)

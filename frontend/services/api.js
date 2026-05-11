@@ -29,7 +29,7 @@ export async function fetchDatasets() {
   return response.data;
 }
 
-export async function fetchHistory(limit = 50) {
+export async function fetchHistory(limit = 3) {
   const response = await apiClient.get("/history", { params: { limit } });
   return response.data;
 }

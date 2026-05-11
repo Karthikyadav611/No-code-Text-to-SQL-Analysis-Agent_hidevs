@@ -1,5 +1,7 @@
 import re
+
 from openai import OpenAI
+
 from utils.config import settings
 
 
@@ -8,15 +10,10 @@ class SQLGeneratorService:
         self.client = self._build_client()
 
     def _build_client(self) -> OpenAI | None:
-        # If no API key → disable LLM
         if not settings.resolved_llm_api_key:
             return None
 
-        client_kwargs = {
-            "api_key": settings.resolved_llm_api_key
-        }
-
-        # Add base_url ONLY if present (important for Groq)
+        client_kwargs: dict[str, str] = {"api_key": settings.resolved_llm_api_key}
         if settings.resolved_llm_base_url:
             client_kwargs["base_url"] = settings.resolved_llm_base_url
 
@@ -30,6 +27,7 @@ Database schema:
 
 Convert the following natural language query into SQL.
 Return ONLY SQL query without explanation.
+If multiple tables are needed, use explicit JOIN clauses with correct join keys.
 
 Few-shot examples:
 
@@ -48,6 +46,11 @@ FROM sales_data
 GROUP BY order_month
 ORDER BY order_month;
 
+Question: Show each order with customer name
+SQL: SELECT o.order_id, o.order_date, c.customer_name
+FROM orders o
+JOIN customers c ON o.customer_id = c.id;
+
 Natural language query:
 {natural_language_query}
 
@@ -57,11 +60,8 @@ SQL:
     @staticmethod
     def _clean_model_output(raw_output: str) -> str:
         output = (raw_output or "").strip()
-
-        # Remove ```sql ... ```
         output = re.sub(r"^```(?:sql)?\s*", "", output, flags=re.IGNORECASE)
         output = re.sub(r"\s*```$", "", output)
-
         return output.strip()
 
     def generate_sql(self, natural_language_query: str, schema_text: str) -> str:
@@ -74,21 +74,14 @@ SQL:
         try:
             response = self.client.chat.completions.create(
                 model=settings.resolved_llm_model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": self._build_prompt(natural_language_query, schema_text)
-                    }
-                ],
-                temperature=0
+                messages=[{"role": "user", "content": self._build_prompt(natural_language_query, schema_text)}],
+                temperature=0,
             )
 
             content = response.choices[0].message.content if response.choices else ""
             return self._clean_model_output(content or "")
+        except Exception as exc:
+            raise RuntimeError(f"LLM request failed: {str(exc)}") from exc
 
-        except Exception as e:
-            raise RuntimeError(f"LLM request failed: {str(e)}")
 
-
-# Singleton instance
 sql_generator_service = SQLGeneratorService()

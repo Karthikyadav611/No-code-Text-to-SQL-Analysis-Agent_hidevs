@@ -1,227 +1,123 @@
-# 🚀 No-Code Text-to-SQL Analysis Agent
+# No-Code Text-to-SQL Analysis Agent
 
-An intelligent full-stack application that converts **natural language queries into SQL**, executes them on a database, and returns results with optional analysis.
+An end-to-end full-stack app that converts natural language into SQL, runs safe read-only queries, and shows results in a web UI.
 
-Built using **FastAPI + React + MySQL + LLM (Groq/OpenAI)**.
+## Features
 
----
+- Upload CSV/XLSX datasets
+- Store uploads as MySQL tables
+- Generate SQL from natural language using LLM (Groq default)
+- Validate and allow only SELECT-style queries
+- Execute SQL and render table + chart output
+- Detect table relationships (declared FK + inferred `*_id` joins)
+- Keep query history (latest 3 shown in UI)
 
-## 🌟 Features
+## Project Structure
 
-* 🔤 Convert plain English questions into SQL queries
-* 🧠 AI-powered SQL generation using LLMs (Groq / OpenAI)
-* 🗄️ Automatic database schema detection
-* 📊 Execute SQL and display results in table format
-* 📝 Query history tracking
-* 📁 Upload datasets dynamically
-* ⚡ FastAPI backend with clean architecture
-* 🎨 Modern responsive React frontend
+```text
+backend/
+  app.py
+  routes/
+  services/
+  database/
+  utils/
 
----
-
-## 🏗️ Project Architecture
-
-```
-text-to-sql/
-│
-├── backend/
-│   ├── routes/            # API endpoints
-│   ├── services/          # Business logic
-│   ├── utils/             # Config & helpers
-│   ├── app.py             # FastAPI entry point
-│   └── .env               # Environment variables
-│
-├── frontend/
-│   ├── src/
-│   ├── components/
-│   ├── pages/
-│   └── App.jsx
-│
-└── README.md
+frontend/
+  pages/
+  components/
+  services/
 ```
 
----
+## Tech Stack
 
-## ⚙️ Tech Stack
+- Backend: FastAPI, SQLAlchemy, PyMySQL, Pandas
+- Frontend: React (Vite), Axios, Recharts
+- LLM: Groq (OpenAI-compatible API client)
 
-### Backend
+## Backend Setup
 
-* FastAPI
-* SQLAlchemy
-* MySQL
-* Uvicorn
+1. Create MySQL database:
 
-### Frontend
-
-* React (Vite)
-* CSS
-
-### AI Integration
-
-* Groq API / OpenAI API
-
----
-
-## 🔑 Environment Variables
-
-Create a `.env` file inside `backend/`:
-
-```
-# Database
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=text_to_sql_db
-
-# LLM Provider
-LLM_PROVIDER=groq
-
-# Groq
-GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.3-70b-versatile
-GROQ_BASE_URL=https://api.groq.com/openai/v1
-
-# OpenAI (optional)
-OPENAI_API_KEY=your_openai_key
-OPENAI_MODEL=gpt-4.1-mini
-
-# Frontend
-FRONTEND_ORIGIN=http://localhost:5173
+```sql
+CREATE DATABASE text_to_sql_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
----
+2. Configure environment:
 
-## 🚀 How to Run the Project
-
-### 🔹 1. Clone the repository
-
-```
-git clone https://github.com/your-username/your-repo.git
-cd text-to-sql
-```
-
----
-
-### 🔹 2. Setup Backend
-
-```
+```powershell
 cd backend
+Copy-Item .env.example .env
+```
+
+3. Set `GROQ_API_KEY` in `backend/.env` and keep:
+
+```dotenv
+LLM_PROVIDER=groq
+```
+
+4. Install dependencies and run:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Run server:
+Run from project root:
 
-```
-uvicorn app:app --reload
-```
-
-Backend runs at:
-
-```
-http://127.0.0.1:8000
+```powershell
+cd ..
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
----
+Or run from backend:
 
-### 🔹 3. Setup Frontend
-
+```powershell
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
+
+Backend URL: [http://localhost:8000](http://localhost:8000)
+
+## Frontend Setup
+
+```powershell
 cd frontend
+Copy-Item .env.example .env
 npm install
 npm run dev
 ```
 
-Frontend runs at:
+Frontend URL: [http://localhost:5173](http://localhost:5173)
 
-```
-http://localhost:5173
-```
+## API Endpoints
 
----
+- `POST /api/upload` Upload CSV/XLSX and import to MySQL
+- `POST /api/query` Natural language to SQL execution
+- `GET /api/schema` Table schema and detected relationships
+- `GET /api/datasets` Uploaded dataset metadata
+- `GET /api/history` Query history (default latest 3)
+- `GET /health` Health check
 
-## 🧠 How It Works
+## Example Multi-Table Data
 
-1. User enters a natural language query
-   👉 Example: *"Show total revenue by region"*
+Use these pair of files:
 
-2. Backend:
+- `customers.csv` with `id`
+- `orders.csv` with `customer_id`
 
-   * Fetches database schema
-   * Formats schema into prompt
-   * Sends prompt to LLM (Groq/OpenAI)
+Then ask:
 
-3. LLM generates SQL:
+- Show each order with customer name and city
+- Total completed order amount by customer
+- Customers with no completed orders
 
-```sql
-SELECT region, SUM(revenue)
-FROM sales_data
-GROUP BY region;
-```
+## Safety
 
-4. Backend executes SQL using SQLAlchemy
+- Blocks destructive SQL keywords (`DROP`, `DELETE`, `UPDATE`, `ALTER`, etc.)
+- Prevents multi-statement execution
+- Adds row limit when query has no `LIMIT`
 
-5. Results returned to frontend and displayed
+## Notes
 
----
-
-## 📊 Example Queries
-
-Try these:
-
-* Show first 10 rows from mpg dataset
-* What is average mpg by origin?
-* Count number of cars per cylinder
-* Which car has highest horsepower?
-* Show cars with mpg > 30
-* Average weight by model year
-
----
-
-## 🛠️ Key Fixes & Learnings
-
-* ✅ Fixed SQLAlchemy row mapping issue (`row._mapping`)
-* ✅ Resolved OpenAI client proxy error
-* ✅ Fixed schema extraction bug
-* ✅ Configured Groq API correctly with base URL
-* ✅ Handled API connection errors
-* ✅ Cleaned LLM response formatting
-
----
-
-## ⚠️ Important Notes
-
-Never push `.env` file to GitHub
-
-Add `.gitignore`:
-
-```
-.env
-__pycache__/
-node_modules/
-```
-
----
-
-## 📌 Future Improvements
-
-* 📈 Add data visualization (charts)
-* 🔐 Authentication system
-* 🧾 Query saving & bookmarks
-* 🤖 Chat-style conversational interface
-* 📊 Auto insights generation
-
----
-
-## 👨‍💻 Author
-
-**Karthik Yadav**
-
-* 💻 Information Science Engineering Student
-* 🚀 Passionate about AI, Web Development & Data Systems
-
----
-
-## ⭐ Support
-
-If you like this project, give it a ⭐ on GitHub and share it!
+- Do not commit `.env` files or secrets.
+- If CORS errors appear in browser, verify backend is running and `/api/schema` returns `200`.

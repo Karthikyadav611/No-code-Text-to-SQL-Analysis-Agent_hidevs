@@ -1,10 +1,13 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Always load backend/.env, even when uvicorn is started from project root.
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(BACKEND_DIR / ".env")
 
 
 @dataclass
@@ -15,7 +18,8 @@ class Settings:
     db_password: str = os.getenv("DB_PASSWORD", "")
     db_name: str = os.getenv("DB_NAME", "text_to_sql_db")
 
-    llm_provider: str = os.getenv("LLM_PROVIDER", "openai").strip().lower()
+    # Default to Groq so users can run this project without OpenAI credentials.
+    llm_provider: str = os.getenv("LLM_PROVIDER", "groq").strip().lower()
 
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")

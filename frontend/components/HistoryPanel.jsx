@@ -1,11 +1,13 @@
 function HistoryPanel({ history }) {
-  if (!history.length) {
+  const latestHistory = history.slice(0, 3);
+
+  if (!latestHistory.length) {
     return <p className="muted">No query history yet.</p>;
   }
 
   return (
     <ul className="list">
-      {history.map((item) => (
+      {latestHistory.map((item) => (
         <li key={item.id} className="list-item">
           <p>
             <strong>User Query:</strong> {item.user_query}

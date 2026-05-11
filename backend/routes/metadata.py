@@ -4,7 +4,11 @@ from sqlalchemy.orm import Session
 
 from database.connection import get_db
 from database.models import QueryHistory, UploadedDataset
-from services.schema_service import format_schema_for_prompt, get_schema_map
+from services.schema_service import (
+    format_schema_for_prompt,
+    get_schema_map,
+    get_table_relationships,
+)
 
 router = APIRouter(prefix="/api", tags=["Metadata"])
 
@@ -12,9 +16,11 @@ router = APIRouter(prefix="/api", tags=["Metadata"])
 @router.get("/schema")
 def read_schema(db: Session = Depends(get_db)) -> dict[str, object]:
     schema_map = get_schema_map(db)
+    relationships = get_table_relationships(db, schema_map)
     return {
         "schema": schema_map,
-        "schema_text": format_schema_for_prompt(schema_map),
+        "relationships": relationships,
+        "schema_text": format_schema_for_prompt(schema_map, relationships),
     }
 
 
@@ -42,7 +48,7 @@ def read_datasets(db: Session = Depends(get_db)) -> dict[str, list[dict[str, obj
 
 @router.get("/history")
 def read_history(
-    limit: int = Query(default=50, ge=1, le=200),
+    limit: int = Query(default=3, ge=1, le=200),
     db: Session = Depends(get_db),
 ) -> dict[str, list[dict[str, object]]]:
     history_rows = (
