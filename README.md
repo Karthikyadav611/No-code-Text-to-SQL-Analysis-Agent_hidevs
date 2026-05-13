@@ -2,6 +2,9 @@
 
 An end-to-end full-stack app that converts natural language into SQL, runs safe read-only queries, and shows results in a web UI.
 
+## Demo video Here : 
+  https://youtu.be/yJ8fh5NxpYI
+
 ## Features
 
 - Upload CSV/XLSX datasets
